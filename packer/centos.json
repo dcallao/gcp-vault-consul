@@ -1,0 +1,69 @@
+{
+  "variables": {
+    "google_application_credentials": "{{ env `GOOGLE_APPLICATION_CREDENTIALS` }}"
+  },
+  "builders": [
+    {
+      "image_name": "gcp-vault-{{ user `vault_version` }}-consul-{{ user `consul_version` }}",
+      "image_description": "Vault and Consul on CentOS 7",
+      "name": "gcp-vault-centos-7",
+      "type": "googlecompute",
+      "project_id": "{{ user `project` }}",
+      "network": "{{ user `network` }}",
+      "subnetwork": "{{ user `subnetwork` }}",
+      "source_image_family": "centos-7",
+      "source_image": "centos-7-v20191210",
+      "ssh_username": "packer",
+      "machine_type": "n1-standard-1",
+      "disk_size": "10",
+      "zone": "{{ user `zone` }}",
+      "labels": {
+        "name": "is-gcp-vault-image",
+        "system": "is-immutable-vault",
+        "product": "vault",
+        "consul-version": "{{ user `consul_version` }}",
+        "vault-version": "{{ user `vault_version` }}",
+        "os": "centos-7",
+        "release": "release-{{ user `release` }}",
+        "owner": "{{ user `owner` }}"
+      }
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "{{ user `consul_zip` }}",
+      "destination": "/tmp/consul.zip"
+    },
+    {
+      "type": "file",
+      "source": "{{ user `vault_zip` }}",
+      "destination": "/tmp/vault.zip"
+    },
+    {
+      "type": "file",
+      "source": "files",
+      "destination": "/tmp"
+    },
+    {
+      "type": "shell",
+      "script": "scripts/el7.sh"
+    },
+    {
+      "type": "shell",
+      "script": "scripts/setup.sh"
+    },
+    {
+      "type": "shell",
+      "script": "scripts/cleanup.sh"
+    },
+    {
+      "type": "shell",
+      "execute_command": "chmod +x {{ .Path }}; {{ .Vars }} sudo -E sh '{{ .Path }}'",
+      "inline": [
+        "export HISTSIZE=0 && sync"
+      ],
+      "inline_shebang": "/bin/sh -x"
+    }
+  ]
+}
